@@ -41,11 +41,19 @@ def serialize_datetime(obj):
 
 
 # Send data to an endpoint using a POST request.
-def send_to_endpoint(method: str, data: dict, invoke_url: str):
-    payload = json.dumps({"records": [{"value": data}]}, default=serialize_datetime)
-    headers = {"Content-Type": "application/vnd.kafka.json.v2+json"}
-    response = requests.request(method, invoke_url, data=payload, headers=headers)
-    print(response.status_code, response.text)
+def send_to_endpoint(
+    method: str, data: dict, invoke_url: str, stream_name=None, partition_key=None
+):
+    payload = json.dumps(
+        {"StreamName": stream_name, "Data": data, "PartitionKey": partition_key},
+        default=serialize_datetime,
+    )
+    headers = {"Content-Type": "application/json"}
+    try:
+        response = requests.request(method, invoke_url, data=payload, headers=headers)
+        print(response.status_code, response.text)
+    except requests.exceptions.RequestException as e:
+        print(f"HTTP request error: {e}")
 
 
 def run_infinite_post_data_loop():
@@ -77,12 +85,16 @@ def run_infinite_post_data_loop():
             data = {"pin": pin_result, "geo": geo_result, "user": user_result}
 
             # Pull endpoint from config file
-            endpoints = config["endpoints"]["rest"]
+            endpoints = config["endpoints"]["streams"]
+
             # Store child processes in list
             processes = []
             for topic, result in data.items():
+                stream_name = f"streaming_{config['user_id']}_{topic}"
+                partition_key = f"{topic}_partition"
                 p = Process(
-                    target=send_to_endpoint, args=("POST", result, endpoints[topic])
+                    target=send_to_endpoint,
+                    args=("PUT", result, endpoints[topic], stream_name, partition_key),
                 )
                 p.start()
                 processes.append(p)
@@ -93,8 +105,19 @@ def run_infinite_post_data_loop():
 
             # # Print results
             # for topic, result in data.items():
-            #     print(f"topic: {topic}, endpoint_url: {endpoints[topic]}")
-            #     print(json.dumps(result, default=serialize_datetime), "\n")
+            #     stream_name = f"streaming_{config['user_id']}_{topic}"
+            #     print(f"key: {topic}, endpoint_url: {endpoints[topic]}")
+            #     print(
+            #         json.dumps(
+            #             {
+            #                 "StreamName": stream_name,
+            #                 "Data": result,
+            #                 "PartitionKey": f"{topic}_partition",
+            #             },
+            #             default=serialize_datetime,
+            #         ),
+            #         "\n",
+            #     )
 
 
 if __name__ == "__main__":
