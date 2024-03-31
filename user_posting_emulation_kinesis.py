@@ -103,22 +103,6 @@ def run_infinite_post_data_loop():
             for p in processes:
                 p.join()
 
-            # # Print results
-            # for topic, result in data.items():
-            #     stream_name = f"streaming_{config['user_id']}_{topic}"
-            #     print(f"key: {topic}, endpoint_url: {endpoints[topic]}")
-            #     print(
-            #         json.dumps(
-            #             {
-            #                 "StreamName": stream_name,
-            #                 "Data": result,
-            #                 "PartitionKey": f"{topic}_partition",
-            #             },
-            #             default=serialize_datetime,
-            #         ),
-            #         "\n",
-            #     )
-
 
 if __name__ == "__main__":
     run_infinite_post_data_loop()

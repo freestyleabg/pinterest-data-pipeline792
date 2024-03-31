@@ -91,11 +91,6 @@ def run_infinite_post_data_loop():
             for p in processes:
                 p.join()
 
-            # # Print results
-            # for topic, result in data.items():
-            #     print(f"topic: {topic}, endpoint_url: {endpoints[topic]}")
-            #     print(json.dumps(result, default=serialize_datetime), "\n")
-
 
 if __name__ == "__main__":
     run_infinite_post_data_loop()
