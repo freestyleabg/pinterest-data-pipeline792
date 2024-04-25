@@ -6,7 +6,7 @@ This document outlines the implementation of a data pipeline that mirrors Pinter
 
 ### Data Emulation
 
-Scripts such as `user_posting_emulation.py` and `user_posting_emulation_kinesis.py` were developed to simulate user data postings, bypassing the initial plan of adapting a single script. These scripts are designed to:
+Scripts such as `user_posting_emulation.py` and `user_posting_emulation_kinesis.py` were developed to simulate user data postings. These scripts are designed to:
 - Interact with databases for data retrieval.
 - Serialize datetime objects for compatibility.
 - Post data concurrently to Kafka and Kinesis streams through configured endpoints.
