@@ -1,7 +1,7 @@
 import datetime
 import json
 import random
-from multiprocessing import Process
+from threading import Thread
 from time import sleep
 
 # import boto3
@@ -29,8 +29,33 @@ class AWSDBConnector:
         )
         return engine
 
+    def retrieve_result_from_table(self, topic_data: str, row_number: int, connection):
+        topic_string = text(f"SELECT * FROM {topic_data} LIMIT {row_number}, 1")
+        selected_row = connection.execute(topic_string)
 
-new_connector = AWSDBConnector()
+        for row in selected_row:
+            result = dict(row._mapping)
+
+        return result
+
+    def get_results_from_rds(self):
+        random_row = random.randint(0, 11000)
+        engine = self.create_db_connector()
+        with engine.connect() as connection:
+            pin_result = self.retrieve_result_from_table(
+                "pinterest_data", random_row, connection
+            )
+            geo_result = self.retrieve_result_from_table(
+                "geolocation_data", random_row, connection
+            )
+            user_result = self.retrieve_result_from_table(
+                "user_data", random_row, connection
+            )
+
+        # Store data in dict
+        data = {"pin": pin_result, "geo": geo_result, "user": user_result}
+
+        return data
 
 
 # Custom function to serialize datetime objects
@@ -41,57 +66,85 @@ def serialize_datetime(obj):
 
 
 # Send data to an endpoint using a POST request.
-def send_to_endpoint(method: str, data: dict, invoke_url: str):
-    payload = json.dumps({"records": [{"value": data}]}, default=serialize_datetime)
-    headers = {"Content-Type": "application/vnd.kafka.json.v2+json"}
-    response = requests.request(method, invoke_url, data=payload, headers=headers)
-    print(response.status_code, response.text)
+def send_to_endpoint(
+    method: str,
+    data: dict,
+    topic: str,
+    stream_service=None,
+    stream_name=None,
+    partition_key=None,
+):
+    if stream_service == "kinesis":
+        payload = json.dumps(
+            {"StreamName": stream_name, "Data": data, "PartitionKey": partition_key},
+            default=serialize_datetime,
+        )
+        headers = {"Content-Type": "application/json"}
+        # Pull endpoints from config file
+        endpoints = config["endpoints"]["streams"]
+
+    elif stream_service == "kafka":
+        payload = json.dumps({"records": [{"value": data}]}, default=serialize_datetime)
+        headers = {"Content-Type": "application/vnd.kafka.json.v2+json"}
+        # Pull endpoints from config file
+        endpoints = config["endpoints"]["rest"]
+    else:
+        print("stream_service invalid")
+
+    try:
+        response = requests.request(
+            method, endpoints[topic], data=payload, headers=headers
+        )
+        print(response.status_code, response.text)
+    except requests.exceptions.RequestException as e:
+        print(f"HTTP request error: {e}")
 
 
-def run_infinite_post_data_loop():
-    while True:
-        sleep(random.randrange(0, 2))
-        random_row = random.randint(0, 11000)
-        engine = new_connector.create_db_connector()
+def post_data_to_api(stream_service):
+    data = new_connector.get_results_from_rds()
+    processes = []
+    for topic, result in data.items():
+        if stream_service == "kafka":
+            args = ("POST", result, topic, stream_service)
 
-        with engine.connect() as connection:
-            pin_string = text(f"SELECT * FROM pinterest_data LIMIT {random_row}, 1")
-            pin_selected_row = connection.execute(pin_string)
+        elif stream_service == "kinesis":
+            stream_name = f"streaming_{config['user_id']}_{topic}"
+            partition_key = f"{topic}_partition"
+            args = ("PUT", result, topic, stream_service, stream_name, partition_key)
+        else:
+            print("Please enter either 'Kafka' or 'Kinesis'")
 
-            for row in pin_selected_row:
-                pin_result = dict(row._mapping)
+        t = Thread(target=send_to_endpoint, args=args)
+        t.start()
+        processes.append(t)
 
-            geo_string = text(f"SELECT * FROM geolocation_data LIMIT {random_row}, 1")
-            geo_selected_row = connection.execute(geo_string)
+    for t in processes:
+        t.join()
 
-            for row in geo_selected_row:
-                geo_result = dict(row._mapping)
 
-            user_string = text(f"SELECT * FROM user_data LIMIT {random_row}, 1")
-            user_selected_row = connection.execute(user_string)
+def infinite_loop_runner(func):
+    def inner(*args):
+        while True:
+            sleep(random.randrange(0, 2))
+            func(*args)
 
-            for row in user_selected_row:
-                user_result = dict(row._mapping)
+    return inner
 
-            # Store data in dict
-            data = {"pin": pin_result, "geo": geo_result, "user": user_result}
 
-            # Pull endpoint from config file
-            endpoints = config["endpoints"]["rest"]
-            # Store child processes in list
-            processes = []
-            for topic, result in data.items():
-                p = Process(
-                    target=send_to_endpoint, args=("POST", result, endpoints[topic])
-                )
-                p.start()
-                processes.append(p)
+@infinite_loop_runner
+def run_infinite_post_data_loop(stream_service):
+    post_data_to_api(stream_service)
 
-            # Close processes
-            for p in processes:
-                p.join()
 
+new_connector = AWSDBConnector()
 
 if __name__ == "__main__":
-    run_infinite_post_data_loop()
-    print("Working")
+    while True:
+        stream_service = input(
+            "Would you like to send data to 'Kafka' or 'Kinesis': "
+        ).lower()
+        if stream_service not in ("kafka", "kinesis"):
+            print("Invalid input. Try again.")
+            continue
+
+        run_infinite_post_data_loop(stream_service)
