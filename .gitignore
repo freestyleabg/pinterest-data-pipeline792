@@ -4,3 +4,6 @@
 credentials
 config.json
 draft
+reameprofile.md
+*.html
+user_posting_emulation_kinesis.py
