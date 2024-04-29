@@ -3,6 +3,7 @@ import json
 import random
 from threading import Thread
 from time import sleep
+
 import requests
 import sqlalchemy
 from sqlalchemy import text
@@ -72,14 +73,8 @@ class AWSDBConnector:
 def serialize_datetime(obj):
     """Custom JSON serializer for datetime objects.
 
-    Args:
-        obj: The object to serialize.
-
     Returns:
         str: ISO formatted datetime string if object is a datetime.
-
-    Raises:
-        TypeError: If the object is not a datetime.
     """
     if isinstance(obj, datetime.datetime):
         return obj.isoformat()
@@ -158,11 +153,7 @@ def post_data_to_api(stream_service):
 
 
 def infinite_loop_runner(func):
-    """Decorator to run a function infinitely with a random sleep interval.
-
-    Args:
-        func: The function to decorate.
-    """
+    """Decorator to run a function infinitely with a random sleep interval."""
 
     def inner(*args):
         while True:
@@ -174,17 +165,11 @@ def infinite_loop_runner(func):
 
 @infinite_loop_runner
 def run_infinite_post_data_loop(stream_service):
-    """Function to post data to an API in an infinite loop.
-
-    Args:
-        stream_service (str): Stream service to use ('kafka' or 'kinesis').
-    """
+    """Function to post data to an API in an infinite loop."""
     post_data_to_api(stream_service)
 
 
-new_connector = AWSDBConnector()
-
-if __name__ == "__main__":
+def start_data_stream():
     while True:
         stream_service = input(
             "Would you like to send data to 'Kafka' or 'Kinesis': "
@@ -194,3 +179,8 @@ if __name__ == "__main__":
             continue
 
         run_infinite_post_data_loop(stream_service)
+
+
+if __name__ == "__main__":
+    new_connector = AWSDBConnector()
+    start_data_stream()
