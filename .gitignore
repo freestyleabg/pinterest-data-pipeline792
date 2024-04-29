@@ -3,7 +3,9 @@
 .trunk
 credentials
 config.json
-draft
+draft/
 reameprofile.md
 *.html
 user_posting_emulation_kinesis.py
+.vscode/
+.databricks/
