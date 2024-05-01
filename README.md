@@ -16,13 +16,15 @@ The `user_posting_emulation.py` script simulates user data postings and interact
 
 Automated scripts facilitate the ingestion of simulated data into Kafka and Kinesis, managing connections, data retrieval, and the formatting and sending of data to service-specific endpoints.
 
-### Databricks Notebooks
+### Data Processing
 
-Databricks notebooks are utilized for tasks such as data processing:
+Databricks notebooks are central to the data processing tasks in this pipeline. They are utilized for a range of operations, including:
+
 
 #### Batch Data Processing
 
-`batch_processing_pipeline.ipynb` leverages Spark SQL within Databricks for batch processing. This part of the pipeline is crucial for storing data long-term for backup, data retention, and analytical purposes. It allows for the accumulation of large datasets over time which can be analyzed to discover trends, perform comprehensive data analysis, or generate reports. Batch processing is typically less time-sensitive than stream processing and is scheduled at regular intervals (e.g., nightly or weekly).
+`batch_processing_pipeline.ipynb` leverages Spark SQL within Databricks for batch processing. This part of the pipeline is crucial for storing data long-term for backup, data retention, and analytical purposes. It allows for the accumulation of large datasets over time which can be analyzed to discover trends, perform comprehensive data analysis, or generate reports. Batch processing, while typically less time-sensitive than stream processing, is scheduled to occur daily in this setup, ensuring consistent data updates and availability for analysis.
+
 
 #### Stream Data Processing
 
@@ -33,12 +35,14 @@ Databricks notebooks are utilized for tasks such as data processing:
 `pipeline_utils.ipynb` includes utilities for managing interactions with AWS services, such as loading AWS credentials, mounting and managing S3 buckets. It also provides core functions for data transformation and processing tasks essential for both batch and stream processing pipelines.
 
 
-### Data Cleaning and Transformation
+### Data Transformation
 
-Key steps in the data cleaning process include:
-- Addressing missing values and erroneous entries.
-- Converting data types for accuracy and consistency.
-- Renaming columns and restructuring data for enhanced usability and analysis.
+Effective data processing requires rigorous data cleaning and transformation to ensure data quality and usability. Key steps in this process include:
+
+- **Error Handling:** Addressing missing values and erroneous entries to maintain data integrity.
+- **Data Type Conversions:** Ensuring all data types are consistent and accurately represented to avoid processing errors.
+- **Data Structuring:** Renaming columns and restructuring data formats to enhance usability and facilitate easier analysis.
+
 
 ### Schema Definition and Stream Processing
 
