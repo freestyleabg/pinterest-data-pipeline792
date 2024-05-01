@@ -9,3 +9,4 @@ reameprofile.md
 user_posting_emulation_kinesis.py
 .vscode/
 .databricks/
+.DS_Store
