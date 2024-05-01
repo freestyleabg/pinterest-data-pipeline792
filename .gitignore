@@ -10,3 +10,4 @@ user_posting_emulation_kinesis.py
 .vscode/
 .databricks/
 .DS_Store
+mount_s3_to_databricks.ipynb
